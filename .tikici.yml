@@ -59,6 +59,7 @@ workflows:
 deployment_config:
   dev:
     workloadType: Deployment
+    serviceAccount: default
     replicaCount: 1
     strategy:
       type: Recreate
