@@ -87,10 +87,10 @@ deployment_config:
         enabled: false
       enabled: true
       hosts:
-        - paths:
+        - host: ''
+          paths:
             - port: 8085
               path: ''
-          host: ''
     envVars:
       OPERATOR_NAMESPACE: default
       OPERATOR_NAME: flink-kubernetes-operator
