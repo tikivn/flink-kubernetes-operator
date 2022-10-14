@@ -1,0 +1,144 @@
+version: '2'
+config: {  }
+environment:
+  BUILD_IMAGE: 'maven:3.6-jdk-11'
+jobs:
+  build_docker:
+    steps:
+      - build_image
+  publish_docker:
+    steps:
+      - push_image
+  deploy_dev:
+    steps:
+      - deploy_dev:
+          cluster: dev
+          namespace: danalytics
+          workload: flink-kubernetes-operator
+          argocd_pipeline: generic-v2
+          deployment_config: dev
+  deploy_prod:
+    steps:
+      - deploy_production:
+          cluster: k8s-data-platform-prod
+          namespace: default
+          workload: flink-kubernetes-operator
+          argocd_pipeline: generic-v2
+          deployment_config: prod
+workflows:
+  jenkins_pipeline:
+    jobs:
+      - build_docker:
+          filters:
+            branches:
+              only:
+                - dev
+                - main
+      - publish_docker:
+          requires:
+            - build_docker
+          filters:
+            branches:
+              only:
+                - dev
+                - main
+      - deploy_dev:
+          requires:
+            - publish_docker
+          filters:
+            branches:
+              only:
+                - dev
+      - deploy_prod:
+          requires:
+            - publish_docker
+          filters:
+            branches:
+              only:
+                - main
+deployment_config:
+  dev:
+    workloadType: Deployment
+    replicaCount: 1
+    strategy:
+      type: Recreate
+    selector:
+      matchLabels:
+        app.kubernetes.io/name: flink-kubernetes-operator
+    template:
+      metadata:
+        labels:
+          app.kubernetes.io/name: flink-kubernetes-operator
+        annotations:
+          kubectl.kubernetes.io/default-container: flink-kubernetes-operator
+    spec:
+      securityContext:
+        runAsGroup: 9999
+        runAsUser: 9999
+    livenessProbe:
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      httpGet:
+        path: /
+        port: health-port
+    startupProbe:
+      failureThreshold: 30
+      periodSeconds: 10
+      httpGet:
+        path: /
+        port: health-port
+    containers:
+      - name: flink-kubernetes-operator
+        imagePullPolicy: IfNotPresent
+        command:
+          - /docker-entrypoint.sh
+          - operator
+        ports:
+          - containerPort: 8085
+            name: health-port
+            protocol: TCP
+        envVars:
+          OPERATOR_NAMESPACE: default
+          OPERATOR_NAME: flink-kubernetes-operator
+          FLINK_CONF_DIR: /opt/flink/conf
+          FLINK_PLUGINS_DIR: /opt/flink/plugins
+          LOG_CONFIG: -Dlog4j.configurationFile=/opt/flink/conf/log4j-operator.properties
+        volumeMounts:
+          - name: flink-operator-config-volume
+            mountPath: /opt/flink/conf/flink-conf.yaml
+            subPath: flink-conf.yaml
+          - name: flink-operator-config-volume
+            mountPath: /opt/flink/conf/log4j-operator.properties
+            subPath: log4j-operator.properties
+          - name: flink-operator-config-volume
+            mountPath: /opt/flink/conf/log4j-console.properties
+            subPath: log4j-console.properties
+        livenessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          httpGet:
+            path: /
+            port: health-port
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 10
+          httpGet:
+            path: /
+            port: health-port
+      volumes:
+        - name: flink-operator-config-volume
+          configMap:
+            name: flink-operator-config
+            items:
+              - key: flink-conf.yaml
+                path: flink-conf.yaml
+              - key: log4j-operator.properties
+                path: log4j-operator.properties
+              - key: log4j-console.properties
+                path: log4j-console.properties
+        - name: keystore
+          secret:
+            secretName: webhook-server-cert
+            items:
+              - key: keystore.p12
+                path: keystore.p12
