@@ -84,6 +84,7 @@ deployment_config:
     ingress:
       service:
         enabled: false
+      enabled: true
       hosts:
         - paths:
             - port: 8085
@@ -110,13 +111,13 @@ deployment_config:
       periodSeconds: 10
       httpGet:
         path: /
-        port: health-port
+        port: 8085
     startupProbe:
       failureThreshold: 30
       periodSeconds: 10
       httpGet:
         path: /
-        port: health-port
+        port: 8085
     volumes:
       - name: flink-operator-config-volume
         configMap:
