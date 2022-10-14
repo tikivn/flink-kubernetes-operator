@@ -84,8 +84,6 @@ deployment_config:
     ingress:
       service:
         clusterIP: None
-        enabled: false
-      enabled: true
       hosts:
         - host: ''
           paths:
