@@ -75,6 +75,35 @@ deployment_config:
       securityContext:
         runAsGroup: 9999
         runAsUser: 9999
+    image:
+      imagePullPolicy: IfNotPresent
+    command:
+      - /docker-entrypoint.sh
+      - operator
+    ingress:
+      service:
+        enabled: false
+      hosts:
+        - paths:
+            - port: 8085
+              name: health-port
+              protocol: TCP
+    envVars:
+      OPERATOR_NAMESPACE: default
+      OPERATOR_NAME: flink-kubernetes-operator
+      FLINK_CONF_DIR: /opt/flink/conf
+      FLINK_PLUGINS_DIR: /opt/flink/plugins
+      LOG_CONFIG: -Dlog4j.configurationFile=/opt/flink/conf/log4j-operator.properties
+    volumeMounts:
+      - name: flink-operator-config-volume
+        mountPath: /opt/flink/conf/flink-conf.yaml
+        subPath: flink-conf.yaml
+      - name: flink-operator-config-volume
+        mountPath: /opt/flink/conf/log4j-operator.properties
+        subPath: log4j-operator.properties
+      - name: flink-operator-config-volume
+        mountPath: /opt/flink/conf/log4j-console.properties
+        subPath: log4j-console.properties
     livenessProbe:
       initialDelaySeconds: 30
       periodSeconds: 10
@@ -87,58 +116,20 @@ deployment_config:
       httpGet:
         path: /
         port: health-port
-    containers:
-      - name: flink-kubernetes-operator
-        imagePullPolicy: IfNotPresent
-        command:
-          - /docker-entrypoint.sh
-          - operator
-        ports:
-          - containerPort: 8085
-            name: health-port
-            protocol: TCP
-        envVars:
-          OPERATOR_NAMESPACE: default
-          OPERATOR_NAME: flink-kubernetes-operator
-          FLINK_CONF_DIR: /opt/flink/conf
-          FLINK_PLUGINS_DIR: /opt/flink/plugins
-          LOG_CONFIG: -Dlog4j.configurationFile=/opt/flink/conf/log4j-operator.properties
-        volumeMounts:
-          - name: flink-operator-config-volume
-            mountPath: /opt/flink/conf/flink-conf.yaml
-            subPath: flink-conf.yaml
-          - name: flink-operator-config-volume
-            mountPath: /opt/flink/conf/log4j-operator.properties
-            subPath: log4j-operator.properties
-          - name: flink-operator-config-volume
-            mountPath: /opt/flink/conf/log4j-console.properties
-            subPath: log4j-console.properties
-        livenessProbe:
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          httpGet:
-            path: /
-            port: health-port
-        startupProbe:
-          failureThreshold: 30
-          periodSeconds: 10
-          httpGet:
-            path: /
-            port: health-port
-      volumes:
-        - name: flink-operator-config-volume
-          configMap:
-            name: flink-operator-config
-            items:
-              - key: flink-conf.yaml
-                path: flink-conf.yaml
-              - key: log4j-operator.properties
-                path: log4j-operator.properties
-              - key: log4j-console.properties
-                path: log4j-console.properties
-        - name: keystore
-          secret:
-            secretName: webhook-server-cert
-            items:
-              - key: keystore.p12
-                path: keystore.p12
+    volumes:
+      - name: flink-operator-config-volume
+        configMap:
+          name: flink-operator-config
+          items:
+            - key: flink-conf.yaml
+              path: flink-conf.yaml
+            - key: log4j-operator.properties
+              path: log4j-operator.properties
+            - key: log4j-console.properties
+              path: log4j-console.properties
+      - name: keystore
+        secret:
+          secretName: webhook-server-cert
+          items:
+            - key: keystore.p12
+              path: keystore.p12
