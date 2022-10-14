@@ -88,7 +88,7 @@ deployment_config:
         - paths:
             - port: 8085
               name: health-port
-              protocol: TCP
+              protocol: tcp
     envVars:
       OPERATOR_NAMESPACE: default
       OPERATOR_NAME: flink-kubernetes-operator
