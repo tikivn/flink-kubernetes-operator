@@ -83,11 +83,13 @@ deployment_config:
       - operator
     ingress:
       service:
+        clusterIP: None
         enabled: false
       enabled: true
       hosts:
         - paths:
             - port: 8085
+              path: ''
           host: ''
     envVars:
       OPERATOR_NAMESPACE: default
