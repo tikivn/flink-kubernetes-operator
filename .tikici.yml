@@ -110,8 +110,8 @@ deployment_config:
         port: 8085
     volumes:
       - name: flink-operator-config-volume
-        configMap:
-          name: flink-operator-config
+        secret:
+          secretName: flink-operator-config
           items:
             - key: flink-conf.yaml
               path: flink-conf.yaml
