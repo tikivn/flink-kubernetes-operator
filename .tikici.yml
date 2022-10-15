@@ -119,9 +119,3 @@ deployment_config:
               path: log4j-operator.properties
             - key: log4j-console.properties
               path: log4j-console.properties
-      - name: keystore
-        secret:
-          secretName: webhook-server-cert
-          items:
-            - key: keystore.p12
-              path: keystore.p12
