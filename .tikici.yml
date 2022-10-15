@@ -83,12 +83,12 @@ deployment_config:
       - operator
     ingress:
       service:
-        clusterIP: None
+        enabled: false
+      enabled: true
       hosts:
-        - host: ''
           paths:
             - port: 8085
-              path: ''
+              path: /
     envVars:
       OPERATOR_NAMESPACE: default
       OPERATOR_NAME: flink-kubernetes-operator
